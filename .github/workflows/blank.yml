@@ -1,0 +1,59 @@
+name: awsamazonRDP
+
+on: workflow_dispatch
+
+jobs:
+
+  build:
+
+    runs-on: windows-latest
+
+    timeout-minutes: 9999
+
+    steps:
+
+    - name: Downloading Files....
+
+      run: |
+        Invoke-WebRequest https://github.com/apoorvvyavahare/windows-rdp/blob/master/Files/ngrok.exe -OutFile ngrok.exe
+        Invoke-WebRequest https://github.com/apoorvvyavahare/windows-rdp/blob/master/Files/nssm.exe -OutFile nssm.exe
+    - name: Copying Files...
+
+      run: | 
+        copy nssm.exe C:\Windows\System32
+        copy ngrok.exe C:\Windows\System32
+    - name: Configuring Ngrok account...
+
+      run: .\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
+
+      env:
+
+        NGROK_AUTH_TOKEN: 1wt72dOKBt9XCYXXf3BvOHZw97f_2n4kKzfRcJ9TDp2AXnNVb
+
+    - name: Downloading Scripts...
+
+      run: |
+        Invoke-WebRequest https://raw.githubusercontent.com/apoorvvyavahare/windows-rdp/master/Files/ngrok-in.bat -OutFile ngrok-in.bat
+        Invoke-WebRequest https://raw.githubusercontent.com/apoorvvyavahare/windows-rdp/master/Files/main.bat -OutFile main.bat
+        Invoke-WebRequest https://raw.githubusercontent.com/apoorvvyavahare/windows-rdp/master/Files/loop.bat -OutFile loop.bat
+    - name: Configuring Ngrok...
+
+      run: start ngrok-in.bat
+
+    - name: Enabling RDP access...
+
+      run: | 
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+        Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+    - name: Creating Ngrok Tunnel...
+
+      run: sc start ngrok
+
+    - name: VM Created! Maximum VM time:6 Hrs
+
+      run: cmd /c main.bat
+
+    - name: Save your data before workflow ends!
+
+      run: cmd /c loop.bat 
